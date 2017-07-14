@@ -1,0 +1,153 @@
+* {
+    padding: 0;
+    margin: 0;
+    user-select: none;
+}
+
+body {
+    background: #2d2f3b;
+    color: #eee;
+    font-family: "Segoe UI", "sans-serif";
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.clipboardItem {
+    border-bottom: 1px solid #6f6e6e;
+    height: 30px;
+    line-height: 30px;
+    font-size: 9pt;
+    overflow: hidden;
+    cursor: pointer;
+
+}
+    .clipboardItem:hover {
+        background: #464858;
+    }
+
+.selectedBullet {
+    color: #ff660a;
+    visibility: hidden;
+    font-size: 25px;
+    vertical-align: sub;
+    padding: 0px 8px;
+    display: inline-block;
+    width: 10px;
+}
+
+.shortcut {
+    font-size: 9pt;
+    vertical-align: bottom;
+    width: 35px;
+    display: inline-block;
+    color: #ca71ff;
+    font-weight: bold;
+}
+
+.itemValue {
+    width: calc(100% - 102px);
+    display: inline-block;
+    white-space: nowrap;    
+    background: transparent;
+    border: none;
+    outline: 0;
+    color: #eee;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.active .selectedBullet {
+    visibility: visible;
+}
+
+.searchIcon {
+    margin-left: 10px;
+    display: inline-block;
+    width: 20px;
+}
+
+.searchIcon i {
+    color: #8a8a8a;
+}
+
+.searchIcon i:hover {
+    color: #ff660a;
+}
+
+.fullText {
+    display: none;
+}
+
+.active .fullText {
+    display: initial;
+}
+
+#list:first-child {
+    border-top: 1px solid #6f6e6e
+}
+
+#searchInput {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 10pt;
+    color: #b7b7b7;
+    line-height: 35px;
+    width: 180px;
+    overflow: hidden;
+}
+
+#searchBox {
+    height: 35px;
+    line-height: 35px;
+    font-size: 14pt;
+    padding-left: 20px;
+    background: #1c1d25;
+    color: #b7b7b7;
+}
+
+#content {
+    position: absolute;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    left: 0;
+    bottom: 0;
+    right: -18px;
+    top: 35px;
+}
+
+#textMode {
+    position: fixed;
+    z-index: 1000;
+    bottom: 20;
+    right: 20;
+}
+
+.mode {    
+    background: #8a8a8a;
+    color: black;
+    border-radius: 4px;
+    width: 55px;
+    text-align: center;
+    display: inline-block;
+    vertical-align: middle;
+    cursor: pointer;
+    font-size: 8pt;
+}
+
+.mode:hover {
+    background: #ff660a;
+}
+
+.mode.active {
+    background: #dadada;
+}
+
+#text {
+    overflow: auto;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+}

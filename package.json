@@ -1,0 +1,24 @@
+{
+  "name": "Clipbored",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "packageWin64": "electron-packager . --asar=true --plataform=win32 --arch=ia32 --overwrite --prune=true --out=release-builds --icon=./src/resources/img/clipboard.ico",
+    "dist" : "build"
+  },
+  "build": {
+    "appId": "clipbored",
+    "win": {
+      "target": "NSIS",
+      "icon": "./src/resources/img/clipboard.ico"
+    }
+  },  "keywords": [],
+  "author": "LeandroAlmeida",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^1.6.11",
+    "electron-builder": "^19.16.0"
+  }
+}
