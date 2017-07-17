@@ -1,16 +1,6 @@
-const {
-    app,
-    ipcMain,
-    clipboard,
-    globalShortcut,
-    Menu,
-    Tray,
-    BrowserWindow
-} = require("electron");
-
+const { app, ipcMain, globalShortcut, Menu, Tray, BrowserWindow } = require("electron");
+const Clipboard = require("./Clipboard");
 const __rootpath = `${__dirname}/..`;
-
-const ContentType = { Text: 0, Html: 1, Image: 2 };
 
 class ClipboardApp {
 
@@ -34,58 +24,76 @@ class ClipboardApp {
 
         this.currentImageEntry = null;
 
+        this.latestHtmlEntry = null;
+
         this.isSettingClipboard = false;
 
+        this.clipboard = null;
+
+        this.shorcutCombo = "Ctrl+";
+
         this.icon = `${__rootpath}/resources/img/clipboard.ico`;
+
+        this.mainWindowView = `${__rootpath}/views/index.html`;
+
+        this.fullTextWindowView= `${__rootpath}/views/fullText.html`;
+
+        this.maxHistoryEntries = 20;
     }
 
     init() {
 
+        this.clipboard = new Clipboard();
+
         this.app.on("ready", _ => {
-            this.initTray();
-            this.initWindow();
-            this.initFullTextWindow();
-            this.initClipboardPolling();
-            this.initRendererListener();
+            this._initUI();         
+            this.clipboard.onChange(this._clipboardChanged.bind(this));
+            this._initRendererListener();
             globalShortcut.unregisterAll();
         });
         this.app.on("will-quit", _ => {
 
-        });        
+        });            
     }
 
-    initTray() {
+    _initUI() {
+        this._initTray();
+        this._initWindow();
+        this._initFullTextWindow();
+    }
+
+    _initTray() {
 
         this.tray = new Tray(this.icon);
         this.tray.on("double-click", evt => this.window.show());
-        this.tray.setContextMenu(Menu.buildFromTemplate([{ label: "Exit", click: this.closeApp.bind(this) }]));
+        this.tray.setContextMenu(Menu.buildFromTemplate([{ label: "Exit", click: this._closeApp.bind(this) }]));
     }
 
-    initWindow() {
+    _initWindow() {
 
         this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 500, minHeight: 500, icon: this.icon });
         //this.window.openDevTools();
         this.window.setAlwaysOnTop(true);
-        this.window.loadURL(`${__rootpath}/views/index.html`);
-        this.window.on("minimize", this.minimizeToTray.bind(this));
-        this.window.on("close", this.minimizeToTray.bind(this));
+        this.window.loadURL(this.mainWindowView);
+        this.window.on("minimize", this._minimizeToTray.bind(this));
+        this.window.on("close", this._minimizeToTray.bind(this));
         this.window.setMenu(Menu.buildFromTemplate([{
             label: "File",
             submenu: [
                 { label: "Clear", click: this.clearClipboard.bind(this) },
-                { label: "Always on top", click: this.toggleAlwaysOnTop.bind(this) },
+                { label: "Always on top", click: this._toggleAlwaysOnTop.bind(this) },
                 { type: "separator" },
-                { label: "Exit", click: this.closeApp.bind(this) }
+                { label: "Exit", click: this._closeApp.bind(this) }
             ]
         }]));
     }
 
-    initFullTextWindow(item) {
+    _initFullTextWindow(item) {
 
-        this.fullTextWindow = new BrowserWindow({ width: 300, height: 300, icon: this.icon });
+        this.fullTextWindow = new BrowserWindow({ width: 300, maxWidth: 1000, height: 300, icon: this.icon });
         //this.fullTextWindow.openDevTools();
-        this.fullTextWindow.loadURL(`${__rootpath}/views/fullText.html`);        
-        this.fullTextWindow.setMenu(null);  
+        this.fullTextWindow.loadURL(this.fullTextWindowView);
+        this.fullTextWindow.setMenu(null);
         this.fullTextWindow.hide();
         this.fullTextWindow.on("close", evt => {
             evt.preventDefault();
@@ -93,88 +101,34 @@ class ClipboardApp {
         });
     }
 
-    initClipboardPolling() {
-
-        this.latestTextEntry = clipboard.readText();
-        this.intervalId = setInterval(this.checkClipboardChanged.bind(this), 500);
+    _clipboardChanged(entry) {        
+        this._addHistoryEntry(entry);
+        this._setShorcuts();
+        this.window.webContents.send("refresh-history", this.stack);
     }
 
-    checkClipboardChanged() {
-
-        this.currentTextEntry = clipboard.readText();
-        this.currentImageEntry = clipboard.readImage();
-
-        if (this.isSettingClipboard) {
-            this.latestTextEntry = this.currentTextEntry;
-            this.latestImageEntry = this.currentImageEntry;
-            this.isSettingClipboard = false;
-            return;
-        }
-
-        
-        let hasClipboardChanged = this.currentTextEntry !== this.latestTextEntry && this.currentTextEntry.trim();
-
-        if (hasClipboardChanged) {
-            this.latestTextEntry = this.currentTextEntry;
-            let entry = {
-                text: clipboard.readText(),
-                html: clipboard.readHTML(),
-                image: clipboard.readImage()
-            };
-            this.clipboardChanged(entry);            
-        }        
+    _addHistoryEntry(entry) {
+        this.stack = [entry].concat(this.stack.length > this.maxHistoryEntries ? this.stack.slice(0, this.stack.length - 1) : this.stack);
     }
 
-    hasClipboardImageChanged() {            
+    _setShorcuts() {
 
-        let currenImage = clipboard.readImage();
-        if (currenImage.isEmpty()) {
-            return false;
-        }
-        return this.latestImageEntry.toDataURL() !== currentImage;
-    }
-
-    hasClipboardTextChanged() {
-
-    }
-
-    getClipboardContentType() {
-
-        let text = clipboard.readText();
-
-    }
-
-    clipboardChanged(entry) {
-
-        this.stack.unshift(entry);
-        this.setShorcuts();
-        this.window.webContents.send("clipboard-changed", this.stack);
-    }
-
-    setShorcuts() {
         globalShortcut.unregisterAll();
         for (let i = 0; i < 9 && i < this.stack.length; ++i) {
-            let item = this.stack[i];
-            let index = i;
-            globalShortcut.register(`Ctrl+${i + 1}`, _ => {
-                this.setClipboardItem(item);
-                this.window.webContents.send("update-bullet", index);
+            let shortcut = `${this.shorcutCombo}${i + 1}`
+            globalShortcut.register(shortcut, _ => {
+                this.clipboard.write(this.stack[i]);
+                this.window.webContents.send("update-active-content", i);
             })
         }
     }
 
-    setClipboardItem(item) {
-        this.isSettingClipboard = true;
-        clipboard.write(item);
-    }
+    _initRendererListener() {
 
-    initRendererListener() {
+        ipcMain.on("set-clipboard", (evt, index) => this.clipboard.write(this.stack[index]));
 
-        ipcMain.on("set-clipboard", (evt, item) => {
-            this.setClipboardItem(item);
-        });
-        ipcMain.on("display-full-text-window", (evt, item) => {
-            this.fullTextWindow.webContents.send("display-full-text", item);
+        ipcMain.on("display-full-text-window", (evt, index) => {
+            this.fullTextWindow.webContents.send("display-full-text", this.stack[index]);
             this.fullTextWindow.show();
             this.fullTextWindow.setAlwaysOnTop(this.window.isAlwaysOnTop());
 
@@ -186,11 +140,11 @@ class ClipboardApp {
     clearClipboard() {
 
         this.stack = [];
-        clipboard.clear();
-        this.window.webContents.send("clipboard-changed", this.stack);
+        this.clipboard.clear();
+        this.window.webContents.send("refresh-history", this.stack);
     }
 
-    minimizeToTray(evt) {
+    _minimizeToTray(evt) {
 
         if (!this.isClosing) {
             evt.preventDefault();
@@ -198,12 +152,12 @@ class ClipboardApp {
         }
     }
 
-    toggleAlwaysOnTop() {
+    _toggleAlwaysOnTop() {
 
         this.window.setAlwaysOnTop(!this.window.isAlwaysOnTop())
     }
 
-    closeApp() {
+    _closeApp() {
 
         this.isClosing = true;
         this.app.exit();

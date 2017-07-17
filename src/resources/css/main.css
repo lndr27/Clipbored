@@ -19,10 +19,16 @@ body {
     font-size: 9pt;
     overflow: hidden;
     cursor: pointer;
+    vertical-align: middle;
 
 }
     .clipboardItem:hover {
         background: #464858;
+    }
+
+    .clipboardItem.image-content {
+        height: auto;
+        padding: 8px 0;
     }
 
 .selectedBullet {
@@ -33,7 +39,12 @@ body {
     padding: 0px 8px;
     display: inline-block;
     width: 10px;
+    vertical-align: middle;
 }
+    .image-content .selectedBullet {
+        line-height: 108px;
+        vertical-align: top;
+    }
 
 .shortcut {
     font-size: 9pt;
@@ -42,6 +53,11 @@ body {
     display: inline-block;
     color: #ca71ff;
     font-weight: bold;
+    vertical-align: middle;
+}
+
+.image-content .shortcut {
+    line-height: 108px;
 }
 
 .itemValue {
@@ -54,6 +70,7 @@ body {
     color: #eee;
     cursor: pointer;
     margin-left: 10px;
+    vertical-align: middle;
 }
 
 .active .selectedBullet {
@@ -116,7 +133,7 @@ body {
     top: 35px;
 }
 
-#textMode {
+#contentModes {
     position: fixed;
     z-index: 1000;
     bottom: 20;
@@ -133,6 +150,7 @@ body {
     vertical-align: middle;
     cursor: pointer;
     font-size: 8pt;
+    margin-left: 5px;
 }
 
 .mode:hover {
@@ -143,7 +161,7 @@ body {
     background: #dadada;
 }
 
-#text {
+#contentText {
     overflow: auto;
     position: absolute;
     left: 0;

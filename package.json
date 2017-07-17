@@ -11,7 +11,7 @@
   "build": {
     "appId": "clipbored",
     "win": {
-      "target": "NSIS",
+      "target": "portable",
       "icon": "./src/resources/img/clipboard.ico"
     }
   },  "keywords": [],
