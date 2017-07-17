@@ -12,10 +12,12 @@ class MainWindowController {
     constructor() {
         this.stack = [];
         this.imgSearchResults = ["img", "image", "jpg", "jpeg", "png", ""];
+        this._isMoving = false;
     }
 
     init() {
         this._registerMainListeners();
+        this._initWindowPositionPolling();
     }
 
     _registerMainListeners() {
@@ -141,6 +143,32 @@ class MainWindowController {
         let trimmedText = text.replace(doubleSpaces, "").trim();
         return trimmedText.substr(0, maxTextSummaryLength) + (trimmedText.length > maxTextSummaryLength ?  " ..." : "");
     };
+
+    _initWindowPositionPolling() {
+
+        let lastScreenX;
+        let lastScreenY;
+        setInterval(() => {
+            if (lastScreenX !== window.screenX || lastScreenY !== window.screenY) {
+                lastScreenY = window.screenY;
+                lastScreenX = window.screenX;
+                this._isMoving = true;
+                this._onScreenMove();
+            }
+            else if (this._isMoving) {
+                this._isMoving = false;
+                this._onScreenStopMoving();
+            }
+        }, 1000);
+    }
+
+    _onScreenMove() {
+        ipcRenderer.send("window-move", true);
+    }
+
+    _onScreenStopMoving() {
+        ipcRenderer.send("window-moved", true);
+    }
 
 };
 

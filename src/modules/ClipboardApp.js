@@ -53,7 +53,7 @@ class ClipboardApp {
         });
         this.app.on("will-quit", _ => {
 
-        });            
+        });
     }
 
     _initUI() {
@@ -71,8 +71,8 @@ class ClipboardApp {
 
     _initWindow() {
 
-        this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 500, minHeight: 500, icon: this.icon });
-        //this.window.openDevTools();
+        this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 1500, minHeight: 500, icon: this.icon });
+        this.window.openDevTools();
         this.window.setAlwaysOnTop(true);
         this.window.loadURL(this.mainWindowView);
         this.window.on("minimize", this._minimizeToTray.bind(this));
@@ -88,7 +88,7 @@ class ClipboardApp {
         }]));
     }
 
-    _initFullTextWindow(item) {
+    _initFullTextWindow() {
 
         this.fullTextWindow = new BrowserWindow({ width: 300, maxWidth: 1000, height: 300, icon: this.icon });
         //this.fullTextWindow.openDevTools();
@@ -98,12 +98,13 @@ class ClipboardApp {
         this.fullTextWindow.on("close", evt => {
             evt.preventDefault();
             this.fullTextWindow.hide();
+            this.clipboard.startPolling();
         });
     }
 
     _clipboardChanged(entry) {        
         this._addHistoryEntry(entry);
-        this._setShorcuts();
+        this._registerShorcuts();
         this.window.webContents.send("refresh-history", this.stack);
     }
 
@@ -111,7 +112,7 @@ class ClipboardApp {
         this.stack = [entry].concat(this.stack.length > this.maxHistoryEntries ? this.stack.slice(0, this.stack.length - 1) : this.stack);
     }
 
-    _setShorcuts() {
+    _registerShorcuts() {
 
         globalShortcut.unregisterAll();
         for (let i = 0; i < 9 && i < this.stack.length; ++i) {
@@ -127,14 +128,21 @@ class ClipboardApp {
 
         ipcMain.on("set-clipboard", (evt, index) => this.clipboard.write(this.stack[index]));
 
-        ipcMain.on("display-full-text-window", (evt, index) => {
-            this.fullTextWindow.webContents.send("display-full-text", this.stack[index]);
-            this.fullTextWindow.show();
-            this.fullTextWindow.setAlwaysOnTop(this.window.isAlwaysOnTop());
+        ipcMain.on("display-full-text-window", (evt, index) => this._displayEntryOnFullTextWindow(index));
 
-            let position = this.window.getPosition();
-            this.fullTextWindow.setPosition(position[0], position[1]);
-        });
+        ipcMain.on("window-move", (evt) => this.clipboard.stopPolling());
+        ipcMain.on("window-moved", (evt) => this.clipboard.startPolling());
+    }
+
+    _displayEntryOnFullTextWindow(entryIndex) {
+        let entry = this.stack[entryIndex];
+        this.fullTextWindow.webContents.send("display-full-text", entry);
+        this.fullTextWindow.show();
+        this.fullTextWindow.setAlwaysOnTop(this.window.isAlwaysOnTop());
+        this.clipboard.stopPolling();
+
+        let position = this.window.getPosition();
+        this.fullTextWindow.setPosition(position[0], position[1]);
     }
 
     clearClipboard() {
@@ -162,5 +170,6 @@ class ClipboardApp {
         this.isClosing = true;
         this.app.exit();
     }
+
 }
 module.exports = ClipboardApp;
