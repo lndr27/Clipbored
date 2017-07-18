@@ -1,6 +1,7 @@
 const { app, ipcMain, globalShortcut, Menu, Tray, BrowserWindow } = require("electron");
 const Clipboard = require("./Clipboard");
 const __rootpath = `${__dirname}/..`;
+const system = require("@paulcbetts/system-idle-time");
 
 class ClipboardApp {
 
