@@ -40,6 +40,8 @@ class ClipboardApp {
         this.fullTextWindowView= `${__rootpath}/views/fullText.html`;
 
         this.maxHistoryEntries = 20;
+
+        this.minIdleTime = 5000;
     }
 
     init() {
@@ -53,8 +55,18 @@ class ClipboardApp {
             globalShortcut.unregisterAll();
         });
         this.app.on("will-quit", _ => {
-
+            clearInterval(this._idleIntervalID);
+            this.window = null;
+            this.fullTextWindow = null;
         });
+        this._idleIntervalID = setInterval(_ => {
+            if (system.getIdleTime() > this.minIdleTime) {
+                this.clipboard.stopPolling();
+            }
+            else {
+                this.clipboard.startPolling();
+            }
+        }, 1000);
     }
 
     _initUI() {
@@ -72,8 +84,8 @@ class ClipboardApp {
 
     _initWindow() {
 
-        this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 1500, minHeight: 500, icon: this.icon });
-        this.window.openDevTools();
+        this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 500, minHeight: 500, icon: this.icon });
+        //this.window.openDevTools();
         this.window.setAlwaysOnTop(true);
         this.window.loadURL(this.mainWindowView);
         this.window.on("minimize", this._minimizeToTray.bind(this));
@@ -128,9 +140,7 @@ class ClipboardApp {
     _initRendererListener() {
 
         ipcMain.on("set-clipboard", (evt, index) => this.clipboard.write(this.stack[index]));
-
         ipcMain.on("display-full-text-window", (evt, index) => this._displayEntryOnFullTextWindow(index));
-
         ipcMain.on("window-move", (evt) => this.clipboard.stopPolling());
         ipcMain.on("window-moved", (evt) => this.clipboard.startPolling());
     }
