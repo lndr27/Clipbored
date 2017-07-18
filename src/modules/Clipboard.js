@@ -1,10 +1,12 @@
-const { clipboard } = require("electron");
-
+const { clipboard, nativeImage } = require("electron");
 const ContentType = { Text: 0, Html: 1, Image: 2 };
+
 
 class Clipboard {
 
     constructor() {
+
+        this.isPolling = false;
 
         this.callbacks = [];
 
@@ -26,8 +28,12 @@ class Clipboard {
 
         this._isManualySettingClipboard = false;
 
+        this._maxLengthToCompareBase64Image = 200;
+
+        this._intervalInMilliseconds = 1000;
+
         this.clear();
-        this._initPolling();
+        this.startPolling();
     }
 
     onChange(callback) {
@@ -51,7 +57,11 @@ class Clipboard {
         clipboard.clear();
     }
 
-    _initPolling() {
+    startPolling() {
+
+        if (this.isPolling) return;
+
+        this.isPolling = true;
 
         this._readCurrentEntry();
 
@@ -74,9 +84,15 @@ class Clipboard {
             // send event clipboard changed with changed data
             this.callbacks.forEach((callback, index) => callback.call(this, this._getClipboardChangedData()));            
 
-        }, 500);
+        }, this._intervalInMilliseconds);
     }
     
+    stopPolling() {
+        if (!this.isPolling) return;
+        this.isPolling = false;
+        clearInterval(this._intervalId);
+    }
+
     _getClipboardChangedData() {        
 
         let result = {};
@@ -91,31 +107,40 @@ class Clipboard {
                 break;
 
             case ContentType.Image:
-                result.image = this._currentClipboardImage;
+                result.image = this._currentClipboardImage.nativeImage;
                 result.imageData = {
-                    base64:      this._currentClipboardImage.toDataURL(),
-                    size:        this._currentClipboardImage.getSize(),
-                    aspectRatio: this._currentClipboardImage.getAspectRatio()
+                    base64:      this._currentClipboardImage.base64,
+                    size:        this._currentClipboardImage.nativeImage.getSize(),
+                    aspectRatio: this._currentClipboardImage.nativeImage.getAspectRatio()
                 };
-                result.image64 = this._currentClipboardImage.toDataURL();
                 break;
         }
         return result;
     }
 
     _readCurrentEntry() {
-
-        this._currentClipboardText = clipboard.readText();
-        this._currentClipboardHtml = clipboard.readHTML();        
-        this._currentClipboardImage = clipboard.readImage();
         this.currentClipboardContentType = this._getClipboardContentType();
+        switch (this.currentClipboardContentType) {
+            case ContentType.Html:
+                this._currentClipboardHtml = clipboard.readHTML();                          
+            case ContentType.Text:
+                this._currentClipboardText = clipboard.readText();
+                break;
+            case ContentType.Image:                
+                let image = clipboard.readImage();
+                this._currentClipboardImage = {
+                     nativeImage: image,
+                     base64: image.toDataURL()
+                };                
+                break;
+        }
     }
 
     _equalizeEntries() {
 
         this.latestTextEntry = this._currentClipboardText;
         this.latestHtmlEntry = this._currentClipboardHtml;        
-        this.latestImageEntry =  this._currentClipboardImage;
+        this.latestImageEntry = this._currentClipboardImage;
     }
 
     _updateLatestEntry() {
@@ -149,9 +174,28 @@ class Clipboard {
         }
     }
 
-    _hasClipboardImageChanged() {            
-        return (this._currentClipboardImage && !this.latestImageEntry)
-            || this.latestImageEntry.toDataURL() !== this._currentClipboardImage.toDataURL();        
+    _hasClipboardImageChanged() {
+
+        if (this._currentClipboardImage && !this.latestImageEntry) {
+            return true;
+        }
+
+        let imageA = this._currentClipboardImage.base64;
+        let imageB = this.latestImageEntry.base64;
+        if (imageA.length !== imageB.length) {
+            return true;
+        }
+
+        // let substImageA = imageA.substr(imageA.length - this._maxLengthToCompareBase64Image, imageA.length - 1);
+        // let substImageB = imageB.substr(imageB.length - this._maxLengthToCompareBase64Image, imageB.length - 1);
+        let substImageA = imageA.substr(0, this._maxLengthToCompareBase64Image);
+        let substImageB = imageB.substr(0, this._maxLengthToCompareBase64Image);
+
+        if (substImageA !== substImageB) {
+            return true;
+        }
+
+        return false;
     }
 
     _hasClipboardTextChanged() {
@@ -166,10 +210,13 @@ class Clipboard {
 
     _getClipboardContentType() {
 
-        if (this._currentClipboardHtml) {
+        if (clipboard.readHTML()) {
             return ContentType.Html;
         }
-        if (!this._currentClipboardImage.isEmpty()) {
+        if (clipboard.readText()) {
+            return ContentType.Text;    
+        }
+        if (!clipboard.readImage().isEmpty()) {
             return ContentType.Image;
         }
         return ContentType.Text;

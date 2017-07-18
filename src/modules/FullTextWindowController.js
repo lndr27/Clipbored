@@ -15,7 +15,7 @@ class FullTextWindowController {
     }
 
     init() {        
-        ipcRenderer.on("display-full-text", (evt, entry) => this._renderChosenEntry(entry));
+        ipcRenderer.on("display-full-text", (evt, entry) => this._renderChosenEntry(entry));        
     }
 
     _renderChosenEntry(entry) {
