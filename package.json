@@ -1,7 +1,7 @@
 {
-  "name": "Clipbored",
+  "name": "clipbored",
   "version": "1.0.0",
-  "description": "",
+  "description": "Simple clipboard history/manager app",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",

@@ -1,7 +1,6 @@
 const { clipboard, nativeImage } = require("electron");
 const ContentType = { Text: 0, Html: 1, Image: 2 };
 
-
 class Clipboard {
 
     constructor() {
@@ -28,9 +27,9 @@ class Clipboard {
 
         this._isManualySettingClipboard = false;
 
-        this._maxLengthToCompareBase64Image = 200;
-
         this._intervalInMilliseconds = 1000;
+
+        this._isReadingClipboard = false;
 
         this.clear();
         this.startPolling();
@@ -67,6 +66,10 @@ class Clipboard {
 
         this._intervalId = setInterval(delta => {
             
+            if (this._isReadingClipboard) {
+                return;
+            }
+
             this._readCurrentEntry();
 
             if (this._isManualySettingClipboard) {
@@ -75,7 +78,7 @@ class Clipboard {
                 return;
             }
 
-            if (!this._hasClipboardContentChanged()) {
+            if (!this._hasClipboardContentChanged()) {               
                 return;
             }
 
@@ -119,6 +122,9 @@ class Clipboard {
     }
 
     _readCurrentEntry() {
+
+        this._isReadingClipboard = true;
+
         this.currentClipboardContentType = this._getClipboardContentType();
         switch (this.currentClipboardContentType) {
             case ContentType.Html:
@@ -126,14 +132,16 @@ class Clipboard {
             case ContentType.Text:
                 this._currentClipboardText = clipboard.readText();
                 break;
-            case ContentType.Image:                
+            case ContentType.Image:            
                 let image = clipboard.readImage();
                 this._currentClipboardImage = {
                      nativeImage: image,
                      base64: image.toDataURL()
-                };                
+                };            
                 break;
         }
+
+        this._isReadingClipboard = false;
     }
 
     _equalizeEntries() {
@@ -161,7 +169,7 @@ class Clipboard {
     }
 
     _hasClipboardContentChanged() {        
-
+        
         switch (this.currentClipboardContentType) {
             case ContentType.Text:
                 return this._hasClipboardTextChanged();
@@ -185,13 +193,7 @@ class Clipboard {
         if (imageA.length !== imageB.length) {
             return true;
         }
-
-        // let substImageA = imageA.substr(imageA.length - this._maxLengthToCompareBase64Image, imageA.length - 1);
-        // let substImageB = imageB.substr(imageB.length - this._maxLengthToCompareBase64Image, imageB.length - 1);
-        let substImageA = imageA.substr(0, this._maxLengthToCompareBase64Image);
-        let substImageB = imageB.substr(0, this._maxLengthToCompareBase64Image);
-
-        if (substImageA !== substImageB) {
+        if (imageA !== imageB) {
             return true;
         }
 
