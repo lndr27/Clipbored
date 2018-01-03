@@ -31,6 +31,11 @@ class Clipboard {
 
         this._isReadingClipboard = false;
 
+        this.init();
+
+    }
+
+    init() {
         this.clear();
         this.startPolling();
     }

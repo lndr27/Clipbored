@@ -84,7 +84,7 @@ class ClipboardApp {
 
     _initWindow() {
 
-        this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 500, minHeight: 500, icon: this.icon });
+        this.window = new BrowserWindow({ width: 240, minWidth: 240, maxWidth: 1500, minHeight: 500, icon: this.icon });
         //this.window.openDevTools();
         this.window.setAlwaysOnTop(true);
         this.window.loadURL(this.mainWindowView);
@@ -96,6 +96,7 @@ class ClipboardApp {
                 { label: "Clear", click: this.clearClipboard.bind(this) },
                 { label: "Always on top", click: this._toggleAlwaysOnTop.bind(this) },
                 { type: "separator" },
+                { label: "DevTools", click: this._toggleDevTools.bind(this) },
                 { label: "Exit", click: this._closeApp.bind(this) }
             ]
         }]));
@@ -122,7 +123,29 @@ class ClipboardApp {
     }
 
     _addHistoryEntry(entry) {
-        this.stack = [entry].concat(this.stack.length > this.maxHistoryEntries ? this.stack.slice(0, this.stack.length - 1) : this.stack);
+
+        if (this.stack.length == 0) {
+            this.stack.push(entry);
+            return;
+        }
+
+        this.stack.push({});
+        let currItem = entry;
+        for (let i = 0; i < this.stack.length; ++i) {
+            let item = this.stack[i];
+            if (item.isPinned) {
+                continue;
+            }
+            else {
+                let aux = this.stack[i];
+                this.stack[i] = currItem;
+                currItem = aux;
+            }
+        }
+
+        if (this.stack.length > this.maxHistoryEntries && !this.stack[this.stack.length - 1].isPinned) {
+            this.stack.splice(this.stack.length - 1, 0);
+        }
     }
 
     _registerShorcuts() {
@@ -143,6 +166,7 @@ class ClipboardApp {
         ipcMain.on("display-full-text-window", (evt, index) => this._displayEntryOnFullTextWindow(index));
         ipcMain.on("window-move", (evt) => this.clipboard.stopPolling());
         ipcMain.on("window-moved", (evt) => this.clipboard.startPolling());
+        ipcMain.on("pin-entry", (evt, index) => { this.stack[index].isPinned = !this.stack[index].isPinned; });
     }
 
     _displayEntryOnFullTextWindow(entryIndex) {
@@ -174,6 +198,11 @@ class ClipboardApp {
     _toggleAlwaysOnTop() {
 
         this.window.setAlwaysOnTop(!this.window.isAlwaysOnTop())
+    }
+
+    _toggleDevTools() {
+
+        this.window.isDevToolsOpened() ? this.window.closeDevTools() : this.window.openDevTools();
     }
 
     _closeApp() {

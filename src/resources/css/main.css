@@ -31,6 +31,10 @@ body {
         padding: 8px 0;
     }
 
+    .clipboardItem.active {
+        background: #4d4365;
+    }
+
 .selectedBullet {
     color: #ff660a;
     visibility: hidden;
@@ -73,9 +77,30 @@ body {
     vertical-align: middle;
 }
 
+
+
 .active .selectedBullet {
     visibility: visible;
 }
+
+.thumbtack {
+    color: #6f6e6e;
+    font-size: 9pt;
+    vertical-align: sub;
+    padding: 0px 8px;
+    display: inline-block;
+    width: 10px;
+    vertical-align: middle;
+    transform: rotate(45deg);
+}
+    .thumbtack:hover {
+        color: #eee;
+    }
+
+    .thumbtack.pinned {
+        color: #eee;
+        transform: rotate(0deg);
+    }
 
 .searchIcon {
     margin-left: 10px;
@@ -90,6 +115,16 @@ body {
 .searchIcon i:hover {
     color: #ff660a;
 }
+
+.menuIcon {
+    margin-left: 10px;
+    display: inline-block;
+    width: 20px;
+    color: #8a8a8a;
+}
+    .menuIcon:hover {
+        color: #ff660a;
+    }
 
 .fullText {
     display: none;

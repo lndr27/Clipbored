@@ -11,6 +11,7 @@ class MainWindowController {
 
     constructor() {
         this.stack = [];
+        this.pinnedItems = [];
         this.imgSearchResults = ["img", "image", "jpg", "jpeg", "png", ""];
         this._isMoving = false;
     }
@@ -49,11 +50,16 @@ class MainWindowController {
 
     _insertHistoryEntry(entry, index) {
         
-        let searchTag  = createElement(`<span class="searchIcon"><i class='fa fa-search'></i></span>`);
-        searchTag.addEventListener("click", _ => ipcRenderer.send("display-full-text-window", index) );
+        //let menuTag = createElement(`<span class="menuIcon">...</span>`);
+
+        let searchTag  = createElement(`<span class="menuIcon">...</span>`);//createElement(`<span class="searchIcon"><i class='fa fa-search'></i></span>`);
+        //searchTag.addEventListener("click", _ => ipcRenderer.send("display-full-text-window", index) );
 
         let contentTag = createElement(`<li class="clipboardItem"></li>`);
-        contentTag.appendChild(createElement(`<span  class="selectedBullet">•</span>`));
+        let thumbtack = createElement(`<span  class="thumbtack"><i class="fa fa-thumb-tack"></i></span>`);
+        thumbtack.addEventListener("click", _ => this._thumbtackClick(thumbtack, entry, index));
+        entry.isPinned && thumbtack.classList.add("pinned");
+        contentTag.appendChild(thumbtack);
         contentTag.appendChild(this._getShortcutTag(index));
         contentTag.appendChild(this._getContentHtml(entry));
         contentTag.appendChild(searchTag);
@@ -61,6 +67,14 @@ class MainWindowController {
         index === 0 && contentTag.classList.add("active");
         document.getElementById("list").appendChild(contentTag);
         entry.contentType == ContentType.Image && contentTag.classList.add("image-content");
+    }
+
+    _thumbtackClick(thumbtack, entry, index) {
+
+        ipcRenderer.send("pin-entry", index);
+        entry.isPinned = !entry.isPinned;
+        entry.isPinned ? thumbtack.classList.remove("pinned") : thumbtack.classList.add("pinned");
+
     }
 
     _getShortcutTag(index) {
